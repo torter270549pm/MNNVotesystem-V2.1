@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎬 SPU FILM - Vote System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Anuphan', sans-serif; 
+            background: #020617;
+            background-image: radial-gradient(at 0% 0%, rgba(30, 58, 138, 0.3) 0, transparent 50%), 
+                              radial-gradient(at 100% 100%, rgba(124, 58, 237, 0.2) 0, transparent 50%);
+            min-height: 100vh; color: #f8fafc; overflow: hidden;
+        }
+        
+        .liquid-card {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(25px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 3rem;
+        }
+
+        .btn-vote {
+            background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* สไตล์หน้าเตือน */
+        #warning-screen {
+            background: rgba(2, 6, 23, 0.95);
+            backdrop-filter: blur(50px);
+            display: none; /* ซ่อนไว้ก่อน */
+            z-index: 9999;
+        }
+
+        .warning-text {
+            background: linear-gradient(to bottom, #fff, #64748b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: clamp(2rem, 8vw, 5rem);
+        }
+    </style>
+</head>
+<body class="p-4">
+
+    <div class="fixed top-6 right-6 z-[60] flex gap-2 p-1 liquid-card rounded-full px-2 py-1.5 shadow-2xl">
+        <button onclick="setLanguage('th')" id="btn-th" class="px-4 py-1.5 rounded-full text-[10px] font-bold transition duration-300">TH</button>
+        <button onclick="setLanguage('en')" id="btn-en" class="px-4 py-1.5 rounded-full text-[10px] font-bold transition duration-300">EN</button>
+    </div>
+
+    <div id="login-screen" class="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-2xl">
+        <div class="liquid-card w-full max-w-sm p-12 text-center border-white/5">
+            <div class="text-6xl mb-6">🎬</div>
+            <h1 id="t-welcome" class="text-3xl font-bold mb-2">VOTER LOGIN</h1>
+            <p id="t-login-desc" class="text-slate-500 mb-10 text-[14px] tracking-[0.3em] uppercase">ใส่ชื่อเล่นของคุณ</p>
+            <input type="text" id="nickname-input" onkeyup="if(event.key === 'Enter') userLogin()" 
+                   class="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-center text-xl text-yellow-400 mb-8 outline-none focus:border-yellow-500/50 transition">
+            <button onclick="userLogin()" id="t-login-btn" class="w-full btn-vote py-5 rounded-2xl text-black font-black uppercase tracking-widest shadow-2xl">Enter System</button>
+        </div>
+    </div>
+
+    <div id="warning-screen" class="fixed inset-0 flex flex-col items-center justify-center text-center p-10">
+        <div class="text-8xl mb-8 animate-bounce">🙏</div>
+        <h1 class="warning-text font-black leading-tight mb-10">
+            อย่าล้อชื่อพ่อแม่เพื่อนนะครับ
+        </h1>
+        <button onclick="closeWarning()" class="bg-white/10 hover:bg-white/20 px-8 py-4 rounded-full text-xs font-bold tracking-widest transition uppercase">
+            ขอโทษครับ / Try Again
+        </button>
+    </div>
+
+    <div id="main-content" class="max-w-xl mx-auto hidden pt-12">
+        </div>
+
+    <script>
+        const db = supabase.createClient('https://iiryzucuufcwkeqoxrch.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlpcnl6dWN1dWZjd2tlcW94cmNoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc2OTMxOTEsImV4cCI6MjA4MzI2OTE5MX0.kDUVyPH6D8yD5flcIiMcXLpr88ecEfNXcDmdNpSTlD4');
+        
+        // --- 📋 คุณต่อเพิ่มชื่อที่ต้องการ "แบน" ตรงนี้ครับ ---
+        const restrictedNames = [
+            'ต๋อง', 'ตุ๊ก', 'ต้อง', 'สาย', 'เพชร', 'พิชชี่', 'อ๊อด'
+        ];
+
+        function userLogin() {
+            const nameInput = document.getElementById('nickname-input');
+            const name = nameInput.value.trim();
+            
+            if (!name) return;
+
+            // ตรวจสอบชื่อใน Blacklist
+            if (restrictedNames.includes(name)) {
+                showWarning();
+                return;
+            }
+
+            // ถ้าชื่อผ่าน... เข้าสู่ระบบปกติ
+            localStorage.setItem('voter_name', name);
+            checkLogin();
+        }
+
+        function showWarning() {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('warning-screen').style.display = 'flex';
+        }
+
+        function closeWarning() {
+            document.getElementById('warning-screen').style.display = 'none';
+            document.getElementById('login-screen').style.display = 'flex';
+            document.getElementById('nickname-input').value = '';
+            document.getElementById('nickname-input').focus();
+        }
+
+        // (ใส่ฟังก์ชันอื่นๆ เช่น checkLogin, loadPolls, updateUI จากโค้ดเดิมของคุณต่อ)
+        function checkLogin() {
+            const name = localStorage.getItem('voter_name');
+            if (name) {
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('main-content').classList.remove('hidden');
+                // ... โหลดข้อมูลต่อ
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8"><title>Manage Projects - Liquid Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Anuphan', sans-serif; background: #020617; color: #f8fafc; min-height: 100vh; }
+        .liquid-glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px) saturate(180%); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 2rem; }
+        .lang-active { background: #fbbf24; color: #000; font-weight: bold; }
+        .btn-danger-glass { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: #ef4444; transition: all 0.3s; }
+        .btn-danger-glass:hover { background: #ef4444; color: white; box-shadow: 0 0 20px rgba(239, 68, 68, 0.4); }
+    </style>
+</head>
+<body class="p-8">
+    <script>if (sessionStorage.getItem('admin_session') !== 'true') window.location.href = 'admin-login.html';</script>
+
+    <div class="fixed top-6 right-6 z-50 flex gap-2 p-1 liquid-glass rounded-full px-2 py-1.5">
+        <button onclick="setLanguage('th')" id="btn-th" class="px-3 py-1 rounded-full text-[10px] transition">TH</button>
+        <button onclick="setLanguage('en')" id="btn-en" class="px-3 py-1 rounded-full text-[10px] transition">EN</button>
+    </div>
+
+    <div class="max-w-4xl mx-auto">
+        <header class="flex justify-between items-center mb-12">
+            <h1 id="t-title" class="text-3xl font-black text-yellow-500 italic uppercase tracking-tighter"></h1>
+            <div class="flex gap-4">
+                <a href="admin-results.html" id="t-res" class="bg-blue-600 px-6 py-2 rounded-xl text-xs font-black shadow-lg"></a>
+                <a href="admin-home.html" id="t-dash" class="bg-slate-800 px-6 py-2 rounded-xl text-xs font-bold text-slate-400 italic">Dashboard</a>
+            </div>
+        </header>
+
+        <div class="liquid-glass p-10 mb-12 border-t-4 border-t-blue-500 relative overflow-hidden">
+            <h2 id="t-new-proj" class="text-sm font-black uppercase tracking-widest text-blue-400 mb-6 italic"></h2>
+            <div class="flex gap-4 mb-8">
+                <input type="text" id="new-poll-title" class="bg-black/40 border border-white/5 p-5 rounded-2xl flex-1 outline-none focus:border-yellow-500 text-xl font-bold text-yellow-400 transition">
+                <button onclick="addPollWithCriteria()" id="t-create-btn" class="bg-yellow-500 text-black px-10 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl hover:scale-105 transition"></button>
+            </div>
+            <div class="bg-black/20 p-6 rounded-2xl border border-white/5">
+                <p id="t-default-label" class="text-[9px] text-slate-500 font-black uppercase mb-4 tracking-[0.2em] italic"></p>
+                <ul id="criteria-preview" class="space-y-2 text-xs text-slate-400 font-light"></ul>
+            </div>
+        </div>
+
+        <div class="flex justify-between items-end mb-8 px-4">
+            <h2 id="t-list-label" class="text-sm font-black uppercase tracking-widest text-slate-500 italic"></h2>
+            <button onclick="deleteAllPolls()" id="t-del-all" class="btn-danger-glass px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition"></button>
+        </div>
+        
+        <div id="admin-polls-list" class="grid gap-6"></div>
+    </div>
+
+    <script>
+        const db = supabase.createClient('https://iiryzucuufcwkeqoxrch.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlpcnl6dWN1dWZjd2tlcW94cmNoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc2OTMxOTEsImV4cCI6MjA4MzI2OTE5MX0.kDUVyPH6D8yD5flcIiMcXLpr88ecEfNXcDmdNpSTlD4');
+        
+        const trans = {
+            th: { 
+                title: "VOTE MANAGER", dash: "Dashboard", res: "VIEW RANKING", new: "ADD NEW PROJECT", 
+                create: "CREATE", def: "AUTO-ADDED CRITERIA:", list: "ALL PROJECTS", del: "DELETE", 
+                addSpec: "+ ADD EXTRA", confirm: "ยืนยันการลบโปรเจกต์นี้?", delAll: "ลบโปรเจกต์ทั้งหมด", 
+                delAllConfirm: "⚠️ คำเตือน: คุณกำลังจะลบโปรเจกต์และคะแนนโหวต 'ทั้งหมด' ในระบบ! ยืนยันหรือไม่?", 
+                placeholder: "ชื่อโปรเจกต์...", promptSpec: "ชื่อหัวข้อคะแนนใหม่:" 
+            },
+            en: { 
+                title: "VOTE MANAGER", dash: "Dashboard", res: "VIEW RANKING", new: "ADD NEW PROJECT", 
+                create: "CREATE", def: "AUTO-ADDED CRITERIA:", list: "ALL PROJECTS", del: "DELETE", 
+                addSpec: "+ ADD EXTRA", confirm: "Confirm Delete?", delAll: "DELETE ALL PROJECTS", 
+                delAllConfirm: "⚠️ WARNING: You are about to delete ALL projects and votes! Are you sure?", 
+                placeholder: "Project Name...", promptSpec: "New Criteria Name:" 
+            }
+        };
+
+        const defaultCriteria = [
+            '1. ความเป็นไปได้ในการทำงาน คำนึงถึงงบประมาณการผลิต', 
+            '2. ความสมบูรณ์ของบทภาพยนตร์ (Shortfilm) วิสัยทัศน์การเล่าเรื่อง รูปแบบดำเนินเรื่องที่น่าสนใจและครบถ้วน', 
+            '3. มีการวางแผนการผลิต ระบุความต้องการที่ชัดเจน', 
+            '4. ผู้อ่านมีความเข้าใจเกี่ยวกับโครงเรื่อง เห็นภาพ'
+        ];
+
+        function setLanguage(lang) { localStorage.setItem('admin_lang', lang); updateUI(); }
+
+        function updateUI() {
+            const lang = localStorage.getItem('admin_lang') || 'th';
+            const t = trans[lang];
+            document.getElementById('t-title').innerText = t.title;
+            document.getElementById('t-dash').innerText = t.dash;
+            document.getElementById('t-res').innerText = t.res;
+            document.getElementById('t-new-proj').innerText = t.new;
+            document.getElementById('t-create-btn').innerText = t.create;
+            document.getElementById('t-default-label').innerText = t.def;
+            document.getElementById('t-list-label').innerText = t.list;
+            document.getElementById('t-del-all').innerText = t.delAll;
+            document.getElementById('new-poll-title').placeholder = t.placeholder;
+            document.getElementById('criteria-preview').innerHTML = defaultCriteria.map(c => `<li>• ${c}</li>`).join('');
+            document.getElementById('btn-th').className = `px-3 py-1 rounded-full text-[10px] ${lang === 'th' ? 'lang-active' : 'text-slate-500'}`;
+            document.getElementById('btn-en').className = `px-3 py-1 rounded-full text-[10px] ${lang === 'en' ? 'lang-active' : 'text-slate-500'}`;
+            loadAdminData();
+        }
+
+        async function addPollWithCriteria() {
+            const title = document.getElementById('new-poll-title').value.trim();
+            if(!title) return;
+            const { data: newPoll } = await db.from('polls').insert([{ title }]).select().single();
+            await db.from('criteria').insert(defaultCriteria.map(label => ({ poll_id: newPoll.id, label })));
+            document.getElementById('new-poll-title').value = '';
+            loadAdminData();
+        }
+
+        async function addCustomCriteria(pollId) {
+            const label = prompt(trans[localStorage.getItem('admin_lang') || 'th'].promptSpec);
+            if(label) { await db.from('criteria').insert([{ poll_id: pollId, label }]); loadAdminData(); }
+        }
+
+        async function deletePoll(id) {
+            if(confirm(trans[localStorage.getItem('admin_lang') || 'th'].confirm)) { 
+                await db.from('polls').delete().eq('id', id); 
+                loadAdminData(); 
+            }
+        }
+
+        // --- ฟังก์ชันลบโปรเจกต์ทั้งหมด ---
+        async function deleteAllPolls() {
+            const lang = localStorage.getItem('admin_lang') || 'th';
+            if(confirm(trans[lang].delAllConfirm)) {
+                // ยืนยันรอบที่สองเพื่อความปลอดภัย
+                if(confirm("Confirm last time? (ยืนยันครั้งสุดท้าย?)")) {
+                    const { error } = await db.from('polls').delete().neq('id', 0); // ลบทุกแถวที่ ID ไม่เท่ากับ 0
+                    if(!error) {
+                        alert("Deleted all data successfully!");
+                        loadAdminData();
+                    } else {
+                        alert("Error deleting: " + error.message);
+                    }
+                }
+            }
+        }
+
+        async function loadAdminData() {
+            const t = trans[localStorage.getItem('admin_lang') || 'th'];
+            const { data: polls } = await db.from('polls').select('*').order('id', { ascending: false });
+            const container = document.getElementById('admin-polls-list');
+            container.innerHTML = '';
+            
+            if(!polls || polls.length === 0) {
+                container.innerHTML = `<p class="text-center text-slate-600 italic py-10">No projects found.</p>`;
+                return;
+            }
+
+            for (let p of polls) {
+                const { data: criteria } = await db.from('criteria').select('*').eq('poll_id', p.id);
+                container.innerHTML += `
+                    <div class="liquid-glass p-8 flex justify-between items-center group transition hover:border-white/20 hover:bg-white/[0.05]">
+                        <div>
+                            <h3 class="text-xl font-bold text-white mb-2 italic tracking-tight">${p.title}</h3>
+                            <div class="flex flex-wrap gap-2">${criteria.map(c => `<span class="text-[8px] bg-white/5 px-2 py-1 rounded-full text-slate-500 font-black uppercase tracking-tighter">${c.label}</span>`).join('')}</div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="addCustomCriteria(${p.id})" class="text-[9px] font-black bg-blue-600/10 text-blue-400 px-4 py-2 rounded-xl border border-blue-500/20 uppercase tracking-widest hover:bg-blue-600 hover:text-white transition">${t.addSpec}</button>
+                            <button onclick="deletePoll(${p.id})" class="text-[9px] font-black bg-red-600/10 text-red-500 px-4 py-2 rounded-xl border border-red-500/20 uppercase tracking-widest hover:bg-red-500 hover:text-white transition">${t.del}</button>
+                        </div>
+                    </div>`;
+            }
+        }
+        updateUI();
+    </script>
+</body>
+</html>

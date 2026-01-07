@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Access | Liquid Glass</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Anuphan', sans-serif; 
+            background: radial-gradient(circle at center, #1e293b 0%, #020617 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        /* เอฟเฟกต์แสงพื้นหลังเคลื่อนไหว */
+        .blob {
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(147, 51, 234, 0.2) 100%);
+            filter: blur(80px);
+            border-radius: 50%;
+            z-index: -1;
+            animation: move 20s infinite alternate;
+        }
+        @keyframes move {
+            from { transform: translate(-10%, -10%); }
+            to { transform: translate(10%, 10%); }
+        }
+        /* Liquid Glass Card */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(25px) saturate(150%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 3.5rem;
+            box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.7);
+        }
+        .input-glass {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .input-glass:focus {
+            border-color: rgba(251, 191, 36, 0.5);
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.1);
+            background: rgba(0, 0, 0, 0.5);
+        }
+        .btn-liquid {
+            background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+            color: #000;
+            font-weight: 900;
+            transition: all 0.3s ease;
+        }
+        .btn-liquid:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 30px rgba(217, 119, 6, 0.4);
+            filter: brightness(1.1);
+        }
+        .btn-liquid:active { transform: translateY(0); }
+    </style>
+</head>
+<body class="p-6">
+    <div class="blob"></div>
+
+    <div class="glass-panel w-full max-w-sm p-12 text-center relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-yellow-500/50 to-transparent"></div>
+        
+        <div class="mb-8">
+            <div class="inline-block p-4 rounded-3xl bg-white/5 mb-6">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+            </div>
+            <h1 class="text-3xl font-black text-white tracking-tighter uppercase italic">Admin Access</h1>
+            <p class="text-slate-500 text-[10px] uppercase tracking-[0.4em] font-black mt-2">Authorized System</p>
+        </div>
+
+        <div class="space-y-6">
+            <div class="relative">
+                <input type="password" id="admin-pw" 
+                       onkeyup="if(event.key === 'Enter') loginAdmin()"
+                       placeholder="••••••••" 
+                       class="input-glass w-full rounded-2xl p-5 text-center text-white text-2xl tracking-[0.6em] outline-none">
+            </div>
+            
+            <button onclick="loginAdmin()" 
+                    class="btn-liquid w-full py-5 rounded-2xl uppercase tracking-[0.2em] text-sm shadow-xl">
+                Enter Dashboard
+            </button>
+        </div>
+
+        <div class="mt-10">
+            <a href="index.html" class="text-slate-600 text-[10px] uppercase font-bold hover:text-slate-400 transition tracking-widest">
+                ← Back to Public Site
+            </a>
+        </div>
+    </div>
+
+    <script>
+        const db = supabase.createClient('https://iiryzucuufcwkeqoxrch.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlpcnl6dWN1dWZjd2tlcW94cmNoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc2OTMxOTEsImV4cCI6MjA4MzI2OTE5MX0.kDUVyPH6D8yD5flcIiMcXLpr88ecEfNXcDmdNpSTlD4');
+
+        async function loginAdmin() {
+            const pw = document.getElementById('admin-pw').value;
+            if(!pw) return;
+
+            // เอฟเฟกต์ตอนกด (Optional)
+            const btn = document.querySelector('.btn-liquid');
+            btn.innerText = 'Verifying...';
+
+            const { data, error } = await db.from('admin_config').select('password').single();
+            
+            if (data && data.password === pw) {
+                sessionStorage.setItem('admin_session', 'true');
+                window.location.href = 'admin-home.html';
+            } else {
+                alert('Access Denied: Invalid Password');
+                btn.innerText = 'Enter Dashboard';
+                document.getElementById('admin-pw').value = '';
+            }
+        }
+    </script>
+</body>
+</html>
