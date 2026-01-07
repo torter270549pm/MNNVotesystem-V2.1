@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎬 SPU FILM - Vote System</title>
+    <title>🎬 SPU FILM - Vote System (All-in-One)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;500;700&display=swap" rel="stylesheet">
@@ -26,10 +26,13 @@
             box-shadow: 0 10px 20px rgba(217, 119, 6, 0.2);
         }
         input[type="range"] { appearance: none; background: rgba(255,255,255,0.1); border-radius: 1rem; height: 6px; width: 100%; outline: none; }
-        input[type="range"]::-webkit-slider-thumb { appearance: none; width: 24px; height: 24px; background: #fbbf24; border-radius: 50%; border: 4px solid #0f172a; }
+        input[type="range"]::-webkit-slider-thumb { appearance: none; width: 24px; height: 24px; background: #fbbf24; border-radius: 50%; border: 4px solid #0f172a; cursor: pointer; }
         
         #warning-screen { display: none; background: rgba(2, 6, 23, 0.98); backdrop-filter: blur(50px); z-index: 9999; }
         .warning-text { background: linear-gradient(to bottom, #fff, #64748b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: clamp(2rem, 8vw, 4rem); }
+        
+        /* สถานะเมื่อโหวตหัวข้อนั้นแล้ว */
+        .voted-item { border-left: 4px solid #fbbf24; padding-left: 1rem; transition: all 0.3s; }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -41,7 +44,7 @@
 
     <div id="warning-screen" class="fixed inset-0 flex flex-col items-center justify-center text-center p-10">
         <div class="text-8xl mb-8 animate-bounce">🙏</div>
-        <h1 class="warning-text font-black leading-tight mb-10">ฮั่นแน่ กูรู้ทันอย่าล้อชื่อพ่อแม่เพื่อนสิ่</h1>
+        <h1 class="warning-text font-black leading-tight mb-10 text-white">ฮั่นแน่ กูรู้ทันอย่าล้อชื่อพ่อแม่เพื่อนสิ่</h1>
         <button onclick="closeWarning()" class="bg-white/10 hover:bg-white/20 px-8 py-4 rounded-full text-xs font-bold tracking-widest transition uppercase">ขอโทษครับ / TRY AGAIN</button>
     </div>
 
@@ -49,39 +52,30 @@
         <div class="liquid-card w-full max-w-sm p-12 text-center border-white/5 shadow-2xl">
             <div class="text-6xl mb-6">🎬</div>
             <h1 id="t-welcome" class="text-3xl font-bold mb-2 uppercase tracking-tighter italic">VOTER LOGIN</h1>
-            <p id="t-login-desc" class="text-slate-500 mb-10 text-[12px] tracking-[0.3em] uppercase font-black">ใส่ชื่อเล่นภาษาไทยของคุณ</p>
+            <p id="t-login-desc" class="text-slate-500 mb-10 text-[14px] tracking-[0.3em] uppercase font-black">ใส่ชื่อเล่นของคุณ</p>
             <input type="text" id="nickname-input" onkeyup="if(event.key === 'Enter') userLogin()" 
                    class="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-center text-xl text-yellow-400 mb-8 outline-none focus:border-yellow-500/50 transition">
             <button onclick="userLogin()" id="t-login-btn" class="w-full btn-vote py-5 rounded-2xl text-black font-black uppercase tracking-widest shadow-2xl active:scale-95 transition">Enter System</button>
         </div>
     </div>
 
-    <div id="main-content" class="max-w-xl mx-auto hidden pt-12 animate-in fade-in duration-700">
+    <div id="main-content" class="max-w-xl mx-auto hidden pt-12 animate-in fade-in duration-700 pb-20">
         <header class="flex justify-between items-center mb-16">
             <div>
-                <p id="t-profile" class="text-yellow-500 text-[10px] font-black uppercase tracking-[0.3em] mb-1 italic"></p>
+                <p id="t-profile" class="text-yellow-500 text-[10px] font-black uppercase tracking-[0.3em] mb-1 italic">VOTER PROFILE</p>
                 <h2 id="display-name" class="text-3xl font-black text-white italic tracking-tighter"></h2>
             </div>
-            <button onclick="userLogout()" id="t-logout" class="text-slate-500 text-[10px] font-black hover:text-red-500 transition border-b border-transparent hover:border-red-500 pb-1 uppercase"></button>
+            <button onclick="userLogout()" id="t-logout" class="text-slate-500 text-[10px] font-black hover:text-red-500 transition border-b border-transparent hover:border-red-500 pb-1 uppercase">LOGOUT</button>
         </header>
 
-        <div id="poll-list" class="space-y-6">
-            <h3 id="t-list-title" class="text-xs font-black uppercase tracking-[0.3em] text-slate-500 mb-8"></h3>
-            <div id="polls-container" class="space-y-4">
-                <div class="p-8 liquid-card opacity-20 animate-pulse text-center italic text-xs">Loading...</div>
-            </div>
+        <div id="polls-container" class="space-y-10">
+            <div class="p-8 liquid-card opacity-20 animate-pulse text-center italic text-xs">Loading all projects...</div>
         </div>
 
-        <div id="vote-form" class="hidden">
-            <button onclick="showPolls()" class="text-slate-500 mb-10 flex items-center text-[10px] font-black uppercase tracking-widest hover:text-white transition group">
-                <span class="mr-2 group-hover:-translate-x-1 transition-transform">←</span> <span id="t-back"></span>
+        <div id="submit-section" class="mt-16 hidden">
+            <button onclick="submitAllVotes()" id="t-submit" class="w-full btn-vote text-black font-black py-6 rounded-3xl shadow-2xl uppercase tracking-widest text-lg transition active:scale-95">
+                SUBMIT ALL SCORES
             </button>
-            <div class="liquid-card p-10 shadow-2xl relative overflow-hidden">
-                <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-yellow-500 to-orange-600"></div>
-                <h2 id="poll-title" class="text-3xl font-black mb-12 text-white italic"></h2>
-                <div id="criteria-container" class="space-y-12"></div>
-                <button onclick="submitVotes()" id="t-submit" class="mt-16 w-full btn-vote text-black font-black py-6 rounded-3xl shadow-2xl uppercase tracking-widest text-lg transition active:scale-95"></button>
-            </div>
         </div>
     </div>
 
@@ -90,16 +84,41 @@
         
         let currentLang = localStorage.getItem('lang') || 'th';
         let currentUser = localStorage.getItem('voter_name');
+        let totalCriteriaCount = 0;
 
-        // รายชื่อที่ห้ามใช้
         const restrictedNames = ['ต๋อง', 'นอม', 'สาย', 'ตุ๊ก', 'เพชร', 'ออมสิน', 'อ๊อด', 'พิชชี่'];
 
         const translations = {
-            th: { welcome: "VOTER LOGIN", loginDesc: "SPU FILM PRODUCTION VOTE", placeholder: "ชื่อเล่นของคุณ...", loginBtn: "ENTER SYSTEM", profile: "VOTER NAME", logout: "LOGOUT", listTitle: "AVAILABLE PROJECTS", voted: "VOTED", notVoted: "PENDING", back: "BACK TO LIST", submit: "SUBMIT SCORE", voteBtn: "โหวต / VOTE", votedAlert: "โหวตไปแล้วครับ", confirmAlert: "บันทึกคะแนนเรียบร้อย!" },
-            en: { welcome: "VOTER LOGIN", loginDesc: "SPU FILM PRODUCTION VOTE", placeholder: "Your nickname...", loginBtn: "ENTER SYSTEM", profile: "VOTER NAME", logout: "LOGOUT", listTitle: "AVAILABLE PROJECTS", voted: "VOTED", notVoted: "PENDING", back: "BACK TO LIST", submit: "SUBMIT SCORE", voteBtn: "VOTE", votedAlert: "Already voted", confirmAlert: "Success!" }
+            th: { 
+                welcome: "VOTER LOGIN", 
+                loginDesc: "SPU FILM PRODUCTION VOTE", 
+                placeholder: "ชื่อเล่นของคุณ...", 
+                loginBtn: "ENTER SYSTEM", 
+                logout: "LOGOUT", 
+                submit: "ส่งคะแนนโหวตทั้งหมด", 
+                confirmAlert: "บันทึกคะแนนเรียบร้อย!",
+                incompleteAlert: "กรุณาโหวตให้ครบทุกโพลและทุกหัวข้อก่อนกดส่งคะแนน!",
+                alreadyVoted: "คุณได้ส่งคะแนนโหวตไปแล้ว ขอบคุณครับ"
+            },
+            en: { 
+                welcome: "VOTER LOGIN", 
+                loginDesc: "SPU FILM PRODUCTION VOTE", 
+                placeholder: "Your nickname...", 
+                loginBtn: "ENTER SYSTEM", 
+                logout: "LOGOUT", 
+                submit: "SUBMIT ALL SCORES", 
+                confirmAlert: "Success! Your votes are saved.",
+                incompleteAlert: "Please vote for all projects and criteria before submitting!",
+                alreadyVoted: "You have already submitted your votes. Thank you."
+            }
         };
 
-        function setLanguage(lang) { currentLang = lang; localStorage.setItem('lang', lang); updateUI(); if (currentUser) loadPolls(); }
+        function setLanguage(lang) { 
+            currentLang = lang; 
+            localStorage.setItem('lang', lang); 
+            updateUI(); 
+            if (currentUser) loadAllPolls(); 
+        }
         
         function updateUI() {
             const t = translations[currentLang];
@@ -107,10 +126,7 @@
             document.getElementById('t-login-desc').innerText = t.loginDesc;
             document.getElementById('nickname-input').placeholder = t.placeholder;
             document.getElementById('t-login-btn').innerText = t.loginBtn;
-            document.getElementById('t-profile').innerText = t.profile;
             document.getElementById('t-logout').innerText = t.logout;
-            document.getElementById('t-list-title').innerText = t.listTitle;
-            document.getElementById('t-back').innerText = t.back;
             document.getElementById('t-submit').innerText = t.submit;
             document.getElementById('btn-th').className = `px-4 py-1.5 rounded-full text-[10px] font-bold ${currentLang === 'th' ? 'bg-yellow-500 text-black shadow-lg shadow-yellow-500/30' : 'text-slate-500'}`;
             document.getElementById('btn-en').className = `px-4 py-1.5 rounded-full text-[10px] font-bold ${currentLang === 'en' ? 'bg-yellow-500 text-black shadow-lg shadow-yellow-500/30' : 'text-slate-500'}`;
@@ -142,68 +158,97 @@
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('main-content').classList.remove('hidden');
                 document.getElementById('display-name').innerText = currentUser;
-                loadPolls();
+                loadAllPolls();
             }
         }
 
-        async function loadPolls() {
-            const t = translations[currentLang];
+        async function loadAllPolls() {
             const container = document.getElementById('polls-container');
             
-            // โหลดข้อมูลแบบรวดเร็ว
-            const [pRes, vRes, cRes] = await Promise.all([
+            // ตรวจสอบว่าเคยโหวตหรือยัง
+            const { data: existingVotes } = await db.from('votes').select('id').eq('voter_name', currentUser).limit(1);
+            if (existingVotes && existingVotes.length > 0) {
+                container.innerHTML = `<div class="p-10 liquid-card text-center text-yellow-500 font-bold">${translations[currentLang].alreadyVoted}</div>`;
+                document.getElementById('submit-section').classList.add('hidden');
+                return;
+            }
+
+            // ดึงข้อมูล Polls และ Criteria ทั้งหมด
+            const [pRes, cRes] = await Promise.all([
                 db.from('polls').select('*').order('id', { ascending: false }),
-                db.from('votes').select('criteria_id').eq('voter_name', currentUser),
-                db.from('criteria').select('id, poll_id')
+                db.from('criteria').select('*')
             ]);
 
-            const votedSet = new Set(vRes.data.map(v => v.criteria_id));
+            totalCriteriaCount = cRes.data.length;
             container.innerHTML = '';
 
             pRes.data.forEach(p => {
-                const pCritIds = cRes.data.filter(c => c.poll_id === p.id).map(c => c.id);
-                const hasVoted = pCritIds.some(id => votedSet.has(id));
+                const pCrit = cRes.data.filter(c => c.poll_id === p.id);
+                let criteriaHtml = pCrit.map(c => `
+                    <div class="space-y-4 criteria-item" id="item-${c.id}">
+                        <div class="flex justify-between items-start gap-4">
+                            <label class="text-slate-300 font-medium text-sm leading-relaxed">${c.label}</label>
+                            <span class="text-3xl font-black text-yellow-500 italic score-display">5</span>
+                        </div>
+                        <input type="range" min="1" max="10" value="5" 
+                               data-id="${c.id}" 
+                               data-voted="false"
+                               oninput="handleSliderInput(this)"
+                               class="vote-slider">
+                    </div>
+                `).join('');
 
                 container.innerHTML += `
-                    <div onclick="${hasVoted ? `alert('${t.votedAlert}')` : `showVotePage(${p.id}, '${p.title}')`}" 
-                         class="liquid-card p-8 flex justify-between items-center cursor-pointer group hover:bg-white/5 transition-all ${hasVoted ? 'opacity-30 grayscale pointer-events-none' : ''}">
-                        <div>
-                            <h4 class="text-xl font-black text-white italic group-hover:text-yellow-500 transition-colors">${p.title}</h4>
-                            <p class="text-[9px] uppercase text-slate-500 tracking-[0.2em] font-black mt-1">${hasVoted ? t.voted : t.notVoted}</p>
-                        </div>
-                        <div class="px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest ${hasVoted ? 'bg-slate-800 text-slate-500' : 'bg-yellow-500 text-black shadow-lg shadow-yellow-500/20'}">${t.voteBtn}</div>
+                    <div class="liquid-card p-10 shadow-2xl relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-yellow-500 to-orange-600"></div>
+                        <h2 class="text-2xl font-black mb-8 text-white italic border-b border-white/5 pb-4">${p.title}</h2>
+                        <div class="space-y-10">${criteriaHtml}</div>
                     </div>`;
             });
+
+            document.getElementById('submit-section').classList.remove('hidden');
         }
 
-        async function showVotePage(id, title) {
-            document.getElementById('poll-list').classList.add('hidden');
-            document.getElementById('vote-form').classList.remove('hidden');
-            document.getElementById('poll-title').innerText = title;
-            const { data: crit } = await db.from('criteria').select('*').eq('poll_id', id);
-            const container = document.getElementById('criteria-container');
-            container.innerHTML = crit.map(c => `
-                <div class="space-y-6">
-                    <div class="flex justify-between items-start gap-4">
-                        <label class="text-slate-300 font-bold text-sm leading-relaxed">${c.label}</label>
-                        <span class="text-4xl font-black text-yellow-500 italic">5</span>
-                    </div>
-                    <input type="range" min="1" max="10" value="5" data-id="${c.id}" oninput="this.previousElementSibling.querySelector('span').innerText = this.value">
-                </div>`).join('');
+        // ฟังก์ชันเมื่อมีการขยับสไลเดอร์
+        function handleSliderInput(slider) {
+            slider.dataset.voted = "true"; // มาร์คว่าโหวตแล้ว
+            slider.previousElementSibling.querySelector('.score-display').innerText = slider.value;
+            // เพิ่มเอฟเฟกต์สีที่หัวข้อเพื่อให้รู้ว่าทำแล้ว
+            document.getElementById(`item-${slider.dataset.id}`).classList.add('voted-item');
         }
 
-        async function submitVotes() {
-            const sliders = document.querySelectorAll('input[type="range"]');
-            const data = Array.from(sliders).map(s => ({ criteria_id: s.dataset.id, score: parseInt(s.value), voter_name: currentUser }));
-            await db.from('votes').insert(data);
-            alert(translations[currentLang].confirmAlert);
-            location.reload();
+        async function submitAllVotes() {
+            const sliders = document.querySelectorAll('.vote-slider');
+            const votedSliders = Array.from(sliders).filter(s => s.dataset.voted === "true");
+
+            // ตรวจสอบว่าโหวตครบทุกหัวข้อหรือไม่
+            if (votedSliders.length < totalCriteriaCount) {
+                alert(translations[currentLang].incompleteAlert);
+                return;
+            }
+
+            const data = Array.from(sliders).map(s => ({ 
+                criteria_id: s.dataset.id, 
+                score: parseInt(s.value), 
+                voter_name: currentUser 
+            }));
+
+            const { error } = await db.from('votes').insert(data);
+            
+            if (!error) {
+                alert(translations[currentLang].confirmAlert);
+                location.reload();
+            } else {
+                alert("Error: " + error.message);
+            }
         }
 
-        function showPolls() { document.getElementById('poll-list').classList.remove('hidden'); document.getElementById('vote-form').classList.add('hidden'); }
-        function userLogout() { localStorage.removeItem('voter_name'); location.reload(); }
+        function userLogout() { 
+            localStorage.removeItem('voter_name'); 
+            location.reload(); 
+        }
+
         checkLogin();
     </script>
 </body>
 </html>
-
