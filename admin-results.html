@@ -21,19 +21,14 @@
             border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 2.5rem;
         }
-        .rank-card {
-            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-        }
-        .rank-card:hover {
-            transform: translateY(-5px);
-            background: rgba(255, 255, 255, 0.05);
-            border-color: rgba(251, 191, 36, 0.3);
-        }
+        .rank-card { transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1); }
+        .rank-card:hover { transform: translateY(-5px); background: rgba(255, 255, 255, 0.05); border-color: rgba(251, 191, 36, 0.3); }
         .lang-active { background: #fbbf24; color: #000; font-weight: bold; }
         
-        /* สไตล์ Modal */
-        #drilldown-modal.active { display: flex; animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        /* Modal Style */
+        .modal { display: none; position: fixed; inset: 0; z-index: 100; background: rgba(2, 6, 23, 0.85); backdrop-filter: blur(20px); align-items: center; justify-content: center; padding: 1.5rem; }
+        .modal.active { display: flex; animation: modalFade 0.3s ease-out; }
+        @keyframes modalFade { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
     </style>
 </head>
 <body class="p-6 md:p-12">
@@ -45,41 +40,58 @@
     </div>
 
     <div class="max-w-6xl mx-auto">
-        <header class="flex justify-between items-center mb-16">
+        <header class="flex justify-between items-center mb-10">
             <div>
                 <h1 id="t-title" class="text-4xl font-black text-yellow-500 italic uppercase tracking-tighter"></h1>
-                <p id="t-subtitle" class="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em] mt-2"></p>
+                <p id="t-subtitle" class="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em] mt-2 font-black italic">Voting Insights Center</p>
             </div>
-            <a href="admin-home.html" id="t-back" class="bg-slate-900/50 border border-slate-800 px-6 py-3 rounded-2xl text-xs font-bold text-slate-400 hover:text-white transition italic"></a>
+            <a href="admin-home.html" id="t-back" class="bg-slate-900/50 border border-slate-800 px-6 py-3 rounded-2xl text-xs font-bold text-slate-400 hover:text-white transition italic">Back</a>
         </header>
 
-        <div id="top-ranking" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-20">
-            </div>
+        <div id="top-ranking" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"></div>
+
+        <div class="flex justify-center mb-20">
+            <button onclick="openAllVotersModal()" class="liquid-glass px-6 py-3 flex items-center gap-4 hover:bg-white/5 transition-all border border-blue-500/30 group">
+                <span class="text-blue-400 text-lg">👥</span>
+                <span class="text-[11px] font-black uppercase tracking-widest text-slate-300">
+                    <span id="t-total-label"></span>: 
+                    <span id="total-unique-voters" class="text-blue-400 text-sm ml-1">0</span> 
+                    <span id="t-unit"></span>
+                </span>
+                <span class="text-[8px] font-black text-blue-500 bg-blue-500/10 px-3 py-1 rounded-full uppercase group-hover:bg-blue-500 group-hover:text-black transition">View</span>
+            </button>
+        </div>
 
         <h2 id="t-detail-label" class="text-sm font-black uppercase tracking-widest text-slate-500 mb-8 italic"></h2>
-        <div id="results-container" class="grid gap-8">
-            </div>
+        <div id="results-container" class="grid gap-8"></div>
     </div>
 
-    <div id="drilldown-modal" class="hidden fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-xl items-center justify-center p-6">
+    <div id="all-voters-modal" class="modal">
+        <div class="liquid-glass w-full max-w-md p-10 shadow-2xl relative border-blue-500/20">
+            <h3 id="t-voter-list-title" class="text-2xl font-black text-blue-400 mb-2 italic tracking-tighter">Voters Participant</h3>
+            <p id="t-voter-list-desc" class="text-slate-500 text-[10px] uppercase tracking-widest font-black mb-8 italic">List of students who voted</p>
+            <div id="full-voter-list" class="grid grid-cols-2 gap-3 max-h-80 overflow-y-auto pr-2 custom-scrollbar"></div>
+            <button onclick="closeModal('all-voters-modal')" class="mt-10 w-full bg-slate-800 hover:bg-slate-700 py-4 rounded-2xl text-white font-black uppercase tracking-widest text-xs transition">Close</button>
+        </div>
+    </div>
+
+    <div id="drilldown-modal" class="modal">
         <div class="liquid-glass w-full max-w-md p-10 shadow-2xl relative border-yellow-500/20">
             <h3 id="modal-criteria-name" class="text-2xl font-black text-yellow-500 mb-2 italic"></h3>
             <p id="t-modal-desc" class="text-slate-500 text-[10px] uppercase tracking-widest font-black mb-8"></p>
-            
-            <div id="voter-list" class="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
-                </div>
-
-            <button onclick="closeModal()" class="mt-10 w-full bg-slate-800 hover:bg-slate-700 py-4 rounded-2xl text-white font-black uppercase tracking-widest text-xs transition">Close</button>
+            <div id="voter-list-score" class="space-y-3 max-h-64 overflow-y-auto pr-2"></div>
+            <button onclick="closeModal('drilldown-modal')" class="mt-10 w-full bg-slate-800 hover:bg-slate-700 py-4 rounded-2xl text-white font-black uppercase tracking-widest text-xs transition">Close</button>
         </div>
     </div>
 
     <script>
         const db = supabase.createClient('https://iiryzucuufcwkeqoxrch.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlpcnl6dWN1dWZjd2tlcW94cmNoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc2OTMxOTEsImV4cCI6MjA4MzI2OTE5MX0.kDUVyPH6D8yD5flcIiMcXLpr88ecEfNXcDmdNpSTlD4');
-        
         let currentLang = localStorage.getItem('admin_lang') || 'th';
+        let uniqueVoterNames = [];
+
         const trans = {
-            th: { title: "Final Rankings", subtitle: "ศูนย์สรุปผลคะแนนโหวต", back: "Back to Home", details: "Project Breakdown (Click to see voters)", modalDesc: "รายชื่อผู้โหวตและคะแนนดิบ", avg: "AVG Score", total: "Total Votes" },
-            en: { title: "Final Rankings", subtitle: "Voting Insights Center", back: "Back to Home", details: "Project Breakdown (Click to see voters)", modalDesc: "Voters List & Raw Scores", avg: "AVG Score", total: "Total Votes" }
+            th: { title: "Ranking Results", back: "Dashboard", details: "Project Details (Click to view voters)", modalDesc: "รายชื่อผู้โหวตและคะแนนดิบ", avg: "AVG Score", total: "Total Votes", totalLabel: "ผู้เข้าร่วม", unit: "คน", voterListTitle: "Voters Participant", voterListDesc: "รายชื่อนักศึกษาที่ลงคะแนนแล้ว" },
+            en: { title: "Ranking Results", back: "Dashboard", details: "Project Details (Click to view voters)", modalDesc: "Voters & Raw Scores", avg: "AVG Score", total: "Total Votes", totalLabel: "Participants", unit: "Voters", voterListTitle: "Voters Participant", voterListDesc: "List of students who voted" }
         };
 
         function setLanguage(lang) { localStorage.setItem('admin_lang', lang); currentLang = lang; updateUI(); }
@@ -87,111 +99,84 @@
         function updateUI() {
             const t = trans[currentLang];
             document.getElementById('t-title').innerText = t.title;
-            document.getElementById('t-subtitle').innerText = t.subtitle;
             document.getElementById('t-back').innerText = t.back;
             document.getElementById('t-detail-label').innerText = t.details;
+            document.getElementById('t-total-label').innerText = t.totalLabel;
+            document.getElementById('t-unit').innerText = t.unit;
             document.getElementById('t-modal-desc').innerText = t.modalDesc;
             
-            document.getElementById('btn-th').className = `px-4 py-1.5 rounded-full text-[10px] font-bold ${currentLang === 'th' ? 'lang-active' : 'text-slate-500'}`;
-            document.getElementById('btn-en').className = `px-4 py-1.5 rounded-full text-[10px] font-bold ${currentLang === 'en' ? 'lang-active' : 'text-slate-500'}`;
+            document.getElementById('btn-th').className = `px-4 py-1.5 rounded-full text-[10px] font-bold ${currentLang === 'th' ? 'lang-active shadow-lg shadow-yellow-500/20' : 'text-slate-500'}`;
+            document.getElementById('btn-en').className = `px-4 py-1.5 rounded-full text-[10px] font-bold ${currentLang === 'en' ? 'lang-active shadow-lg shadow-yellow-500/20' : 'text-slate-500'}`;
             loadResults();
         }
 
         async function loadResults() {
             const t = trans[currentLang];
             const [{ data: polls }, { data: criteria }, { data: votes }] = await Promise.all([
-                db.from('polls').select('*'),
-                db.from('criteria').select('*'),
-                db.from('votes').select('*')
+                db.from('polls').select('*'), db.from('criteria').select('*'), db.from('votes').select('*')
             ]);
 
-            // คำนวณคะแนนเฉลี่ยโปรเจกต์
+            uniqueVoterNames = [...new Set(votes.map(v => v.voter_name))];
+            document.getElementById('total-unique-voters').innerText = uniqueVoterNames.length;
+
             let pollStats = polls.map(p => {
                 const pCriteria = criteria.filter(c => c.poll_id === p.id);
                 let totalS = 0, vCount = 0;
-                
                 const critData = pCriteria.map(cItem => {
                     const cVotes = votes.filter(v => v.criteria_id === cItem.id);
                     const avg = cVotes.length ? (cVotes.reduce((s, v) => s + v.score, 0) / cVotes.length).toFixed(2) : 0;
-                    totalS += cVotes.reduce((s, v) => s + v.score, 0);
-                    vCount += cVotes.length;
+                    totalS += cVotes.reduce((s, v) => s + v.score, 0); vCount += itemLengthCount(cVotes, votes, cItem.id);
                     return { id: cItem.id, label: cItem.label, avg, count: cVotes.length };
                 });
-
+                function itemLengthCount(cv, allv, cid) { return allv.filter(v => v.criteria_id === cid).length; }
                 const finalAvg = vCount ? (totalS / vCount).toFixed(2) : 0;
                 return { id: p.id, title: p.title, avg: parseFloat(finalAvg), totalVotes: vCount, criteria: critData };
             });
 
-            // Render Top 3
             const sorted = [...pollStats].sort((a, b) => b.avg - a.avg).slice(0, 3);
             document.getElementById('top-ranking').innerHTML = sorted.map((p, i) => `
-                <div class="liquid-glass p-10 text-center rank-card border-t-4 ${i===0?'border-yellow-500 shadow-xl shadow-yellow-500/10':i===1?'border-slate-400':'border-orange-700'}">
-                    <div class="text-5xl mb-4">${i===0?'🥇':i===1?'🥈':'🥉'}</div>
-                    <h4 class="text-xl font-black text-white italic truncate mb-2">${p.title}</h4>
-                    <p class="text-5xl font-black text-white">${p.avg}</p>
-                    <p class="text-[9px] uppercase text-slate-500 font-bold mt-4 tracking-widest">${t.avg}</p>
+                <div class="liquid-glass p-8 text-center rank-card border-t-4 ${i===0?'border-yellow-500 shadow-xl shadow-yellow-500/10':i===1?'border-slate-400':'border-orange-700'}">
+                    <div class="text-4xl mb-3">${i===0?'🥇':i===1?'🥈':'🥉'}</div>
+                    <h4 class="text-lg font-black text-white italic truncate mb-1">${p.title}</h4>
+                    <p class="text-4xl font-black text-white">${p.avg}</p>
                 </div>`).join('');
 
-            // Render Details
             document.getElementById('results-container').innerHTML = pollStats.map(p => `
-                <div class="liquid-glass p-8 md:p-12">
+                <div class="liquid-glass p-8 md:p-12 mb-8">
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-4 border-b border-white/5 pb-8">
-                        <div>
-                            <h3 class="text-3xl font-black text-white italic leading-tight">${p.title}</h3>
-                            <p class="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-2 italic">${t.total}: ${p.totalVotes}</p>
-                        </div>
-                        <div class="text-left md:text-right">
-                            <span class="text-[9px] font-black text-blue-500 uppercase tracking-widest">${t.avg}</span>
-                            <p class="text-4xl font-black text-blue-400">${p.avg}</p>
-                        </div>
+                        <div><h3 class="text-3xl font-black text-white italic leading-tight tracking-tighter">${p.title}</h3><p class="text-[10px] text-slate-500 font-black uppercase mt-2 italic">${t.total}: ${p.totalVotes}</p></div>
+                        <div class="text-left md:text-right"><span class="text-[9px] font-black text-blue-500 uppercase tracking-widest">${t.avg}</span><p class="text-4xl font-black text-blue-400">${p.avg}</p></div>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         ${p.criteria.map(c => `
-                            <div onclick="openDrillDown(${c.id}, '${c.label.replace(/'/g, "\\'")}')" 
-                                 class="liquid-glass p-6 bg-white/5 border border-white/5 hover:border-yellow-500/40 cursor-pointer transition-all flex justify-between items-center group">
-                                <div class="pr-4">
-                                    <p class="text-xs text-slate-400 group-hover:text-slate-200 transition-colors">${c.label}</p>
-                                    <p class="text-[8px] text-slate-600 font-bold uppercase mt-1">Click to view voters</p>
-                                </div>
-                                <div class="text-right">
-                                    <p class="text-2xl font-black text-white">${c.avg}</p>
-                                    <p class="text-[8px] text-slate-500 uppercase">${c.count} Votes</p>
-                                </div>
-                            </div>
-                        `).join('')}
+                            <div onclick="openDrillDown(${c.id}, '${c.label.replace(/'/g, "\\'")}')" class="liquid-glass p-6 bg-white/5 border border-white/5 hover:border-yellow-500/40 cursor-pointer transition-all flex justify-between items-center group">
+                                <div class="pr-4"><p class="text-xs text-slate-400 group-hover:text-slate-200">${c.label}</p></div>
+                                <div class="text-right"><p class="text-2xl font-black text-white">${c.avg}</p><p class="text-[8px] text-slate-500 uppercase">${c.count} Votes</p></div>
+                            </div>`).join('')}
                     </div>
                 </div>`).join('');
+        }
+
+        function openAllVotersModal() {
+            const listContainer = document.getElementById('full-voter-list');
+            listContainer.innerHTML = uniqueVoterNames.length > 0 
+                ? uniqueVoterNames.map(name => `<div class="bg-white/5 p-3 rounded-xl border border-white/5 text-center text-sm font-bold text-slate-300">${name}</div>`).join('')
+                : '<p class="col-span-2 text-center text-slate-600 italic">No voters yet</p>';
+            document.getElementById('all-voters-modal').classList.add('active');
         }
 
         async function openDrillDown(criteriaId, label) {
             document.getElementById('modal-criteria-name').innerText = label;
-            const voterList = document.getElementById('voter-list');
-            voterList.innerHTML = '<p class="text-slate-500 text-center animate-pulse py-4 italic text-sm">Loading voters...</p>';
-            
+            const voterList = document.getElementById('voter-list-score');
+            voterList.innerHTML = '<p class="text-slate-500 text-center animate-pulse py-4 italic text-sm">Loading...</p>';
             document.getElementById('drilldown-modal').classList.add('active');
-
-            const { data: voters, error } = await db.from('votes').select('voter_name, score').eq('criteria_id', criteriaId);
-
-            if (error || !voters.length) {
-                voterList.innerHTML = '<p class="text-slate-600 text-center py-4 italic text-sm">No votes recorded yet.</p>';
-                return;
-            }
-
-            voterList.innerHTML = voters.map(v => `
-                <div class="bg-white/5 border border-white/5 p-4 rounded-2xl flex justify-between items-center">
-                    <div class="flex items-center gap-3">
-                        <div class="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]"></div>
-                        <span class="text-sm font-bold text-slate-200">${v.voter_name}</span>
-                    </div>
-                    <span class="text-xl font-black text-yellow-500">${v.score}</span>
-                </div>
-            `).join('');
+            const { data: voters } = await db.from('votes').select('voter_name, score').eq('criteria_id', criteriaId);
+            voterList.innerHTML = voters.length > 0 
+                ? voters.map(v => `<div class="bg-white/5 border border-white/5 p-4 rounded-2xl flex justify-between items-center"><span class="text-sm font-bold text-slate-200">${v.voter_name}</span><span class="text-xl font-black text-yellow-500">${v.score}</span></div>`).join('')
+                : '<p class="text-slate-600 text-center py-4 italic">No votes yet</p>';
         }
 
-        function closeModal() {
-            document.getElementById('drilldown-modal').classList.remove('active');
-        }
-
+        function closeModal(modalId) { document.getElementById(modalId).classList.remove('active'); }
         updateUI();
     </script>
 </body>
